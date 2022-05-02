@@ -11,7 +11,7 @@ using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace UtilityCollageTests
+namespace UtilityCollage
 {
 
     /// <summary>
