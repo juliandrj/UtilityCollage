@@ -183,7 +183,7 @@ namespace UtilityCollage
             {
                 FileName = parametrosNulos ? "cmd.exe" : comando,
                 Arguments = parametrosNulos ? $"/c {comando}" : parametros,
-                RedirectStandardOutput = false,
+                RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
                 CreateNoWindow = true
@@ -195,40 +195,28 @@ namespace UtilityCollage
             }
             using (Process process = Process.Start(procStartInfo))
             {
-                do
+                process.OutputDataReceived += NLogOutputHandler;
+                process.BeginOutputReadLine();
+                using (StreamReader srError = process.StandardError)
                 {
-                    if (!process.HasExited)
+                    process.WaitForExit();
+                    string error = srError.ReadToEnd();
+                    if (!String.IsNullOrWhiteSpace(error))
                     {
-                        process.Refresh();
-                        _log.Trace($"###################################################################");
-                        _log.Trace($"  Physical memory usage     : {process.WorkingSet64}");
-                        _log.Trace($"  Base priority             : {process.BasePriority}");
-                        _log.Trace($"  Priority class            : {process.PriorityClass}");
-                        _log.Trace($"  User processor time       : {process.UserProcessorTime}");
-                        _log.Trace($"  Privileged processor time : {process.PrivilegedProcessorTime}");
-                        _log.Trace($"  Total processor time      : {process.TotalProcessorTime}");
-                        _log.Trace($"  Paged system memory size  : {process.PagedSystemMemorySize64}");
-                        _log.Trace($"  Paged memory size         : {process.PagedMemorySize64}");
-                        using (StreamReader sr = process.StandardError)
-                        {
-                            string error = sr.ReadToEnd();
-                            if (!String.IsNullOrWhiteSpace(error))
-                            {
-                                _log.Error(error);
-                            }
-                        }
-                        if (!process.Responding)
-                        {
-                            _log.Warn($"El proceso NO responde!!!");
-                        }
-                        _log.Trace($"###################################################################");
-
+                        _log.Error(error);
                     }
                 }
-                while (!process.WaitForExit(5000));
                 int ec = process.ExitCode;
                 _log.Debug($"Exit code: {ec}");
                 return ec;
+            }
+        }
+
+        private static void NLogOutputHandler(object sendingProcess, DataReceivedEventArgs outLine)
+        {
+            if (!String.IsNullOrEmpty(outLine.Data))
+            {
+                _log.Debug(outLine.Data);
             }
         }
 

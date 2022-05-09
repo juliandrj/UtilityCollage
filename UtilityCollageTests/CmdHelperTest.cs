@@ -9,7 +9,7 @@ namespace UtilityCollageTests
         [Fact]
         public void ComandoValidoTest()
         {
-            int exitCode = CmdHelper.Cmd("C:\\Windows\\System32", "ping.exe", "127.0.0.1");
+            int exitCode = CmdHelper.Cmd("C:\\Windows\\System32", "ping.exe", "-n 5 127.0.0.1");
             Assert.Equal(0, exitCode);
         }
 
