@@ -134,7 +134,7 @@ namespace UtilityCollage
         public static void Cmd(string workingDirectory, string comando, string parametros, int valorSalidaCorrecta, params int[] valoresSalidaCorrecta)
         {
             int codigoSalida = Cmd(workingDirectory, comando, parametros);
-            if (((valoresSalidaCorrecta == null || valoresSalidaCorrecta.Length == 0) && codigoSalida != valorSalidaCorrecta) || (valoresSalidaCorrecta != null && valoresSalidaCorrecta.Length > 0 && !Array.Exists<int>(valoresSalidaCorrecta, valor => codigoSalida == valor)))
+            if (codigoSalida != valorSalidaCorrecta && !Array.Exists<int>(valoresSalidaCorrecta, valor => codigoSalida == valor))
             {
                 throw new Exception($"[CMD ERROR] Codigo de salida: {codigoSalida}");
             }

@@ -14,6 +14,13 @@ namespace UtilityCollageTests
         }
 
         [Fact]
+        public void ComandoValidoMultiplesSalidasTest()
+        {
+            var exception = Record.Exception(() => CmdHelper.Cmd("C:\\Windows\\System32", "ping.exe", "", 0, 1));
+            Assert.Null(exception);
+        }
+
+        [Fact]
         public void ComandoNoValidoTest()
         {
             Assert.Throws<Exception>(()=>CmdHelper.Cmd("C:\\Windows\\System32", "ping.exe", "", 0));

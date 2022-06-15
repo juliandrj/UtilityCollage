@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>UtilityCollage</id>
-    <version>0.1.1</version>
+    <version>0.2.1</version>
     <title>UtilityCollage</title>
     <authors>juliandrj</authors>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
@@ -10,7 +10,7 @@
     <!-- <icon>icon.png</icon> -->
     <projectUrl>https://github.com/juliandrj/UtilityCollage</projectUrl>
     <description>Utilitarios generales para aplicaciones varias</description>
-    <releaseNotes>Summary of changes made in this release of the package.</releaseNotes>
+    <releaseNotes>Ajuste de bug en tratamiento de comandos con múltiples salidas validas.</releaseNotes>
     <copyright>Copyright ©  2022</copyright>
     <tags>Utilitario Prueba</tags>
   </metadata>
