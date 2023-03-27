@@ -23,7 +23,14 @@ namespace UtilityCollageTests
         [Fact]
         public void ComandoNoValidoTest()
         {
-            Assert.Throws<Exception>(()=>CmdHelper.Cmd("C:\\Windows\\System32", "ping.exe", "", 0));
+            Assert.Throws<Exception>(() => CmdHelper.Cmd("C:\\Windows\\System32", "ping.exe", "", 0));
+        }
+
+        [Fact]
+        public void SustituirVariablesEntornoTest()
+        {
+            Environment.SetEnvironmentVariable("VARIABLE_TEST", "%WINDIR%\\sistem32");
+            Assert.Equal("JDRJC:\\windows\\sistem32JDRJC:\\windows\\sistem32", CmdHelper.SustituirTokensConVariablesDeEntorno("JDRJ%VARIABLE_TEST%JDRJ%VARIABLE_TEST%"));
         }
     }
 }

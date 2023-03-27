@@ -242,22 +242,9 @@ namespace UtilityCollage
             {
                 return ruta;
             }
-
-            //lógica para normalizar variables de entorno configuradas
-            Regex re = new Regex("(?<=%).*(?=%)");
-            while (re.IsMatch(ruta))
-            {
-                string var = re.Match(ruta).Value;
-                string valvar = Environment.GetEnvironmentVariable(var);
-                if (String.IsNullOrEmpty(valvar))
-                {
-                    throw new ArgumentException($"La variable de entorno {var} es vacia o no se ha definido.");
-                }
-                ruta = ruta.Replace($"%{var}%", valvar);
-            }
-
-            _log.Trace($"Ruta normalizada: {ruta}");
-            return agregarSeparador ? (!ruta.EndsWith($"{Path.DirectorySeparatorChar}") ? $"{ruta}{Path.DirectorySeparatorChar}" : ruta) : ruta;
+            string rutaNormalizada = CmdHelper.SustituirTokensConVariablesDeEntorno(ruta);
+            _log.Trace($"Ruta normalizada: {rutaNormalizada}");
+            return agregarSeparador ? (!rutaNormalizada.EndsWith($"{Path.DirectorySeparatorChar}") ? $"{rutaNormalizada}{Path.DirectorySeparatorChar}" : rutaNormalizada) : rutaNormalizada;
         }
 
         public static string NormalizarRuta(string ruta)

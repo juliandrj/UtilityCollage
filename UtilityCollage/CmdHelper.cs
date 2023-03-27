@@ -2,6 +2,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace UtilityCollage
 {
@@ -218,6 +219,19 @@ namespace UtilityCollage
             {
                 _log.Debug(outLine.Data);
             }
+        }
+
+        public static string SustituirTokensConVariablesDeEntorno(string cadena)
+        {
+            Regex re = new Regex("(?<=%)[A-Za-z0-9_()]+(?=%)");
+            string cadenaResultante = cadena;
+            while (re.IsMatch(cadenaResultante))
+            {
+                string var = re.Match(cadenaResultante).Value;
+                string valvar = Environment.GetEnvironmentVariable(var);
+                cadenaResultante = cadenaResultante.Replace($"%{var}%", String.IsNullOrEmpty(valvar) ? $"${var}_INDEFINIDA$" : valvar);
+            }
+            return cadenaResultante;
         }
 
     }
