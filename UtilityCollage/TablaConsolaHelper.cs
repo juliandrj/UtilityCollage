@@ -1,8 +1,6 @@
 ﻿using ConsoleTables;
 using NLog;
-using System.Collections.Generic;
 using System.Data;
-using System.Linq;
 
 namespace UtilityCollage
 {
@@ -51,7 +49,7 @@ namespace UtilityCollage
 
         public static void ImprimirDataTable(DataTable dataTable, bool incluirRowError, int numeroFilasMaximasAMostrar)
         {
-            List<string> columnas = new List<string>();
+            List<string> columnas = [];
             if (incluirRowError)
             {
                 columnas.Add("ERROR");
@@ -60,7 +58,7 @@ namespace UtilityCollage
             {
                 columnas.Add(col.ColumnName);
             }
-            ConsoleTable ct = new ConsoleTable(columnas.ToArray<string>());
+            ConsoleTable ct = new([.. columnas]);
             int i = 1;
             foreach (DataRow dr in dataTable.Rows)
             {
@@ -68,13 +66,13 @@ namespace UtilityCollage
                 {
                     break;
                 }
-                List<object> valores = new List<object>();
+                List<object> valores = [];
                 if (incluirRowError)
                 {
                     valores.Add(dr.RowError);
                 }
-                valores.AddRange(dr.ItemArray);
-                ct.AddRow(valores.ToArray());
+                valores.AddRange([.. dr.ItemArray]);
+                ct.AddRow([.. valores]);
                 i++;
             }
             _log.Info($"\n{ct.ToMinimalString()}");

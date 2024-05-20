@@ -2,12 +2,7 @@
 using SharpCompress.Common;
 using SharpCompress.Readers;
 using SharpCompress.Writers;
-using System;
-using System.Collections.Generic;
-using System.IO;
 using System.IO.Compression;
-using System.Linq;
-using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -17,14 +12,17 @@ namespace UtilityCollage
     /// <summary>
     /// Clase con utilitarios para manejo de directorios y ficheros.
     /// </summary>
-    public class FileHelper
+    public partial class FileHelper
     {
 
         private static readonly Logger _log = NLog.LogManager.GetCurrentClassLogger();
 
+        [GeneratedRegex("[A-Za-z]+(:\\\\){1}.*")]
+        private static partial Regex RutaRelativaRE();
+
         public static bool EsRutaRelativa(string ruta)
         {
-            Regex reRuta = new Regex("[A-Za-z]+(:\\\\){1}.*");
+            Regex reRuta = RutaRelativaRE();
             return !reRuta.Match(ruta).Success;
         }
 
@@ -97,7 +95,7 @@ namespace UtilityCollage
             {
                 throw new DirectoryNotFoundException($"El directorio no existe: {ruta}");
             }
-            DirectoryInfo di = new DirectoryInfo(ruta);
+            DirectoryInfo di = new(ruta);
             return di.GetFiles("*", opcion).OrderBy(f => f.Name).ToList<FileInfo>();
         }
 
@@ -112,15 +110,10 @@ namespace UtilityCollage
                 if ((File.GetAttributes(fileToCompress.FullName) &
                     FileAttributes.Hidden) != FileAttributes.Hidden & fileToCompress.Extension != ".gz")
                 {
-                    using (FileStream compressedFileStream = File.Create(fileToCompress.FullName + ".gz"))
-                    {
-                        using (GZipStream compressionStream = new GZipStream(compressedFileStream,
-                            CompressionMode.Compress))
-                        {
-                            originalFileStream.CopyTo(compressionStream);
-                            _log.Debug($"Compressed: {fileToCompress.Name}");
-                        }
-                    }
+                    using FileStream compressedFileStream = File.Create(fileToCompress.FullName + ".gz");
+                    using GZipStream compressionStream = new(compressedFileStream, CompressionMode.Compress);
+                    originalFileStream.CopyTo(compressionStream);
+                    _log.Debug($"Compressed: {fileToCompress.Name}");
                 }
             }
         }
@@ -131,78 +124,72 @@ namespace UtilityCollage
         /// <param name="fileToDecompress"></param>
         public static void Decompress(FileInfo fileToDecompress)
         {
-            using (FileStream originalFileStream = fileToDecompress.OpenRead())
-            {
-                string currentFileName = fileToDecompress.FullName;
-                string newFileName = currentFileName.Remove(currentFileName.Length - fileToDecompress.Extension.Length);
+            using FileStream originalFileStream = fileToDecompress.OpenRead();
+            string currentFileName = fileToDecompress.FullName;
+            string newFileName = currentFileName.Remove(currentFileName.Length - fileToDecompress.Extension.Length);
 
-                using (FileStream decompressedFileStream = File.Create(newFileName))
+            using (FileStream decompressedFileStream = File.Create(newFileName))
+            {
+                using (GZipStream decompressionStream = new(originalFileStream, CompressionMode.Decompress))
                 {
-                    using (GZipStream decompressionStream = new GZipStream(originalFileStream, CompressionMode.Decompress))
-                    {
-                        decompressionStream.CopyTo(decompressedFileStream);
-                        _log.Debug($"Decompressed: {fileToDecompress.Name}");
-                        decompressionStream.Close();
-                    }
-                    decompressedFileStream.Close();
+                    decompressionStream.CopyTo(decompressedFileStream);
+                    _log.Debug($"Decompressed: {fileToDecompress.Name}");
+                    decompressionStream.Close();
                 }
-                originalFileStream.Close();
+                decompressedFileStream.Close();
             }
+            originalFileStream.Close();
         }
 
-        public static FileInfo ComprimirTarBz2(FileInfo fichero, params FileInfo[] ficheros)
+        public static FileInfo? ComprimirTarBz2(FileInfo fichero, params FileInfo[] ficheros)
         {
             string nombreFicheroComprimido = fichero.FullName.Remove(fichero.FullName.Length - fichero.Extension.Length) + ".tar.bz2";
             using (Stream stream = File.OpenWrite(nombreFicheroComprimido))
             {
-                WriterOptions wo = new WriterOptions(CompressionType.BZip2)
+                WriterOptions wo = new(CompressionType.BZip2)
                 {
                     LeaveStreamOpen = false,
                 };
                 wo.ArchiveEncoding.Default = Encoding.Default;
-                using (IWriter writer = WriterFactory.Open(stream, ArchiveType.Tar, wo))
+                using IWriter writer = WriterFactory.Open(stream, ArchiveType.Tar, wo);
+                writer.Write(fichero.Name, fichero);
+                if (ficheros != null && ficheros.Length > 0)
                 {
-                    writer.Write(fichero.Name, fichero);
-                    if (ficheros != null && ficheros.Length > 0)
+                    foreach (FileInfo fi in ficheros)
                     {
-                        foreach (FileInfo fi in ficheros)
-                        {
-                            writer.Write(fi.Name, fi);
-                        }
+                        writer.Write(fi.Name, fi);
                     }
                 }
             }
-            FileInfo fiTarBz2 = new FileInfo(nombreFicheroComprimido);
+            FileInfo fiTarBz2 = new(nombreFicheroComprimido);
             return fiTarBz2.Exists ? fiTarBz2 : null;
         }
 
         public static List<FileInfo> DescomprimirTarBz2(FileInfo ficheroComprimido, string password)
         {
-            List<FileInfo> ficheros = new List<FileInfo>();
+            List<FileInfo> ficheros = [];
             using (Stream stream = ficheroComprimido.OpenRead())
             {
-                ReaderOptions ro = String.IsNullOrEmpty(password) ?
+                ReaderOptions? ro = String.IsNullOrEmpty(password) ?
                     null :
                     new ReaderOptions()
                     {
                         Password = password
                     };
-                using (IReader reader = ReaderFactory.Open(stream, ro))
+                using IReader reader = ReaderFactory.Open(stream, ro);
+                while (reader.MoveToNextEntry())
                 {
-                    while (reader.MoveToNextEntry())
+                    if (!reader.Entry.IsDirectory)
                     {
-                        if (!reader.Entry.IsDirectory)
-                        {
-                            string nombreDestino = $"{ficheroComprimido.DirectoryName}{Path.DirectorySeparatorChar}{reader.Entry.Key}";
-                            reader.WriteEntryToFile(
-                                nombreDestino,
-                                new ExtractionOptions()
-                                {
-                                    Overwrite = true
-                                }
-                            );
-                            ficheros.Add(new FileInfo(nombreDestino));
-                        }
+                        string nombreDestino = $"{ficheroComprimido.DirectoryName}{Path.DirectorySeparatorChar}{reader.Entry.Key}";
+                        reader.WriteEntryToFile(
+                            nombreDestino,
+                            new ExtractionOptions()
+                            {
+                                Overwrite = true
+                            }
+                        );
+                        ficheros.Add(new FileInfo(nombreDestino));
                     }
                 }
             }
@@ -211,14 +198,18 @@ namespace UtilityCollage
 
         public static List<FileInfo> DescomprimirTarBz2(FileInfo ficheroComprimido)
         {
-            return DescomprimirTarBz2(ficheroComprimido, null);
+            return DescomprimirTarBz2(ficheroComprimido, string.Empty);
         }
 
         public static FileInfo UnirFicheroFragmentado(FileInfo primerFichero)
         {
             string nombre = primerFichero.Name.Remove(primerFichero.Name.Length - primerFichero.Extension.Length);
-            FileInfo ficheroUnido = new FileInfo($"{primerFichero.Directory.FullName}{Path.DirectorySeparatorChar}{nombre}");
-            using (FileStream fs = new FileStream(ficheroUnido.FullName, FileMode.Append))
+            if (primerFichero.Directory == null)
+            {
+                throw new DirectoryNotFoundException($"No existe información del directorio del fichero {primerFichero.Name}");
+            }
+            FileInfo ficheroUnido = new(fileName: $"{primerFichero.Directory.FullName}{Path.DirectorySeparatorChar}{nombre}");
+            using (FileStream fs = new(ficheroUnido.FullName, FileMode.Append))
             {
                 int size = 0;
                 foreach (FileInfo f in primerFichero.Directory.GetFiles($"{nombre}.*"))

@@ -1,12 +1,10 @@
 ﻿using NLog;
-using System;
 using System.Diagnostics;
-using System.IO;
 using System.Text.RegularExpressions;
 
 namespace UtilityCollage
 {
-    public sealed class CmdHelper
+    public sealed partial class CmdHelper
     {
         private static readonly Logger _log = NLog.LogManager.GetCurrentClassLogger();
 
@@ -29,7 +27,7 @@ namespace UtilityCollage
         /// <param name="comando">Comando a ejecutar.</param>
         public static void CmdDefExitCode(string comando)
         {
-            Cmd(null, comando, null, 0);
+            Cmd(string.Empty, comando, string.Empty, 0);
         }
 
         /// <summary>
@@ -50,7 +48,7 @@ namespace UtilityCollage
         /// <param name="parametros">Parámetros del comando.</param>
         public static void CmdDefExitCode(string comando, string parametros)
         {
-            Cmd(null, comando, parametros, 0);
+            Cmd(string.Empty, comando, parametros, 0);
         }
 
         /// <summary>
@@ -93,7 +91,7 @@ namespace UtilityCollage
         /// <param name="valoresSalidaCorrecta">Listado de valores de salida considerados correctos (opcional)</param>
         public static void Cmd(string comando, int valorSalidaCorrecta, params int[] valoresSalidaCorrecta)
         {
-            Cmd(null, comando, null, valorSalidaCorrecta, valoresSalidaCorrecta);
+            Cmd(string.Empty, comando, string.Empty, valorSalidaCorrecta, valoresSalidaCorrecta);
         }
 
         /// <summary>
@@ -113,7 +111,7 @@ namespace UtilityCollage
         /// <param name="valoresSalidaCorrecta">Listado de valores de salida considerados correctos (opcional)</param>
         public static void Cmd(string comando, string parametros, int valorSalidaCorrecta, params int[] valoresSalidaCorrecta)
         {
-            Cmd(null, comando, parametros, valorSalidaCorrecta, valoresSalidaCorrecta);
+            Cmd(string.Empty, comando, parametros, valorSalidaCorrecta, valoresSalidaCorrecta);
         }
 
         /// <summary>
@@ -151,7 +149,7 @@ namespace UtilityCollage
         /// <returns>Código de salida del comando</returns>
         public static int Cmd(string comando, string parametros)
         {
-            return Cmd(null, comando, parametros);
+            return Cmd(string.Empty, comando, parametros);
         }
 
         /// <summary>
@@ -165,7 +163,7 @@ namespace UtilityCollage
         /// <returns>Código de salida del comando</returns>
         public static int Cmd(string comando)
         {
-            return Cmd(null, comando, null);
+            return Cmd(string.Empty, comando, string.Empty);
         }
 
         /// <summary>
@@ -180,7 +178,7 @@ namespace UtilityCollage
         public static int Cmd(string workingDirectory, string comando, string parametros)
         {
             bool parametrosNulos = String.IsNullOrEmpty(parametros);
-            ProcessStartInfo procStartInfo = new ProcessStartInfo()
+            ProcessStartInfo procStartInfo = new()
             {
                 FileName = parametrosNulos ? "cmd.exe" : comando,
                 Arguments = parametrosNulos ? $"/c {comando}" : parametros,
@@ -194,23 +192,25 @@ namespace UtilityCollage
             {
                 procStartInfo.WorkingDirectory = workingDirectory;
             }
-            using (Process process = Process.Start(procStartInfo))
+            using Process process = new()
             {
-                process.OutputDataReceived += NLogOutputHandler;
-                process.BeginOutputReadLine();
-                using (StreamReader srError = process.StandardError)
+                StartInfo = procStartInfo
+            };
+            process.Start();
+            process.OutputDataReceived += NLogOutputHandler;
+            process.BeginOutputReadLine();
+            using (StreamReader srError = process.StandardError)
+            {
+                process.WaitForExit();
+                string error = srError.ReadToEnd();
+                if (!String.IsNullOrWhiteSpace(error))
                 {
-                    process.WaitForExit();
-                    string error = srError.ReadToEnd();
-                    if (!String.IsNullOrWhiteSpace(error))
-                    {
-                        _log.Error(error);
-                    }
+                    _log.Error(error);
                 }
-                int ec = process.ExitCode;
-                _log.Debug($"Exit code: {ec}");
-                return ec;
             }
+            int ec = process.ExitCode;
+            _log.Debug($"Exit code: {ec}");
+            return ec;
         }
 
         private static void NLogOutputHandler(object sendingProcess, DataReceivedEventArgs outLine)
@@ -223,16 +223,18 @@ namespace UtilityCollage
 
         public static string SustituirTokensConVariablesDeEntorno(string cadena)
         {
-            Regex re = new Regex("(?<=%)[A-Za-z0-9_()]+(?=%)");
+            Regex re = VariableEntornoRE();
             string cadenaResultante = cadena;
             while (re.IsMatch(cadenaResultante))
             {
                 string var = re.Match(cadenaResultante).Value;
-                string valvar = Environment.GetEnvironmentVariable(var);
-                cadenaResultante = cadenaResultante.Replace($"%{var}%", String.IsNullOrEmpty(valvar) ? $"${var}_INDEFINIDA$" : valvar);
+                string valvar = Environment.GetEnvironmentVariable(var) ?? $"${var}_INDEFINIDA$";
+                cadenaResultante = cadenaResultante.Replace($"%{var}%", valvar);
             }
             return cadenaResultante;
         }
 
+        [GeneratedRegex("(?<=%)[A-Za-z0-9_()]+(?=%)")]
+        private static partial Regex VariableEntornoRE();
     }
 }
