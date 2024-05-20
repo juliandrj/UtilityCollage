@@ -1,6 +1,4 @@
-using System;
 using UtilityCollage;
-using Xunit;
 
 namespace UtilityCollageTests
 {
