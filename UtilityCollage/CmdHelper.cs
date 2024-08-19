@@ -135,7 +135,7 @@ namespace UtilityCollage
             int codigoSalida = Cmd(workingDirectory, comando, parametros);
             if (codigoSalida != valorSalidaCorrecta && !Array.Exists<int>(valoresSalidaCorrecta, valor => codigoSalida == valor))
             {
-                throw new Exception($"[CMD ERROR] Codigo de salida: {codigoSalida}");
+                throw new Exception($"[CMD ERROR] La ejecución del comando ha fallado. Por favor, revise los registros para obtener más detalles sobre lo ocurrido, teniendo en cuenta que la información allí contenida depende completamente del comando externo ejecutado.");
             }
         }
 
@@ -187,7 +187,9 @@ namespace UtilityCollage
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
-            _log.Debug($"[CMD] {procStartInfo.FileName} {procStartInfo.Arguments}");
+            _log.Info($"[CMD] Ejecutando: {procStartInfo.FileName} {procStartInfo.Arguments}");
+            _log.Info(" >++('> >++('> >++('> >++('> >++('> >++('> >++('> >++('> >++('> >++('> >++('> >++('> >++('> >++('>");
+            _log.Info(string.Empty);
             if (!String.IsNullOrEmpty(workingDirectory) && System.IO.Directory.Exists(workingDirectory))
             {
                 procStartInfo.WorkingDirectory = workingDirectory;
@@ -209,7 +211,9 @@ namespace UtilityCollage
                 }
             }
             int ec = process.ExitCode;
-            _log.Debug($"Exit code: {ec}");
+            _log.Info(string.Empty);
+            _log.Info(" <')++< <')++< <')++< <')++< <')++< <')++< <')++< <')++< <')++< <')++< <')++< <')++< <')++< <')++<");
+            _log.Info($"[CMD] Fin de la ejecución con código de salida: {ec}");
             return ec;
         }
 
@@ -217,7 +221,7 @@ namespace UtilityCollage
         {
             if (!String.IsNullOrEmpty(outLine.Data))
             {
-                _log.Debug(outLine.Data);
+                _log.Info(outLine.Data);
             }
         }
 
