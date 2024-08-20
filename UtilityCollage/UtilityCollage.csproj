@@ -7,7 +7,7 @@
     <PackageId>UtilityCollage</PackageId>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Title>UtilityCollage</Title>
-    <Version>2.0.0</Version>
+    <Version>2.0.1</Version>
     <Authors>juliandrj</Authors>
     <Description>Utilitarios generales para aplicaciones varias</Description>
     <Copyright>Copyright © 2022</Copyright>
